@@ -1,37 +1,73 @@
-# TrueOdds Validation Plan
+# TrueOdds 2.1 Validation Protocol
 
-## No look-ahead rule
+## 1. Freeze the model before testing
 
-Historical predictions must use only information available at the historical decision time. No postgame statistics, final injury knowledge, retrospective depth-chart changes, or other hindsight information may leak into the model.
+Do not tune on the same observations used to evaluate performance.
 
-## Calibration
+## 2. Prevent look-ahead leakage
 
-Compare predicted probability with actual frequency. Suggested buckets: 50–55%, 55–60%, 60–65%, 65–70%, 70–75%, and 75%+.
+Every historical feature must be timestamped or reconstructable as information that existed before the bet decision.
 
-Track calibration separately by market type where sample size permits: moneyline, spread, total, passing props, rushing props, receiving props, touchdowns, and parlays.
+Examples of forbidden leakage:
 
-## Proper scoring rules
+- postgame statistics
+- final injury knowledge unavailable at decision time
+- future depth-chart changes
+- closing prices used as model predictors
+- statistics calculated using games after the prediction date
 
-Track Brier score and log loss to penalize overconfidence.
+## 3. Split chronologically
 
-## Betting performance
+Preferred:
 
-For every recommendation record model version, timestamp, event, market, raw probability, calibrated probability, conservative probability, sportsbook odds at decision time, closing odds, projected EV, result, realized profit/loss, confidence score, data-quality flags, and promotion flag.
+1. training period
+2. calibration period
+3. untouched test period
 
-For parlays also record marginal probability per leg, dependency classification, correlation-risk score, joint probability, actual parlay payout, and whether it was +EV without promotion.
+A rolling walk-forward evaluation is even better.
 
-## Market benchmark
+## 4. Evaluate probability quality
 
-Track closing-line value (CLV). Positive CLV is not sufficient proof of profitability, but persistent negative CLV is a warning sign.
+Track:
 
-## Edge monotonicity
+- Brier score
+- log loss
+- expected calibration error
+- calibration table / reliability curve
 
-Larger projected edges should generally perform better over sufficiently large samples. If edge buckets are not monotonic, recalibration is likely needed.
+## 5. Evaluate betting quality
 
-## Out-of-sample testing
+Track:
 
-Do not judge the model on data used for fitting or calibration. Use rolling or season-based splits so validation occurs on untouched future periods.
+- realized ROI
+- average projected conservative EV
+- CLV
+- edge bucket monotonicity
+- performance by market type
+- performance with and without promotions
 
-## Shadow mode
+## 6. Parlays
 
-Before production, log live recommendations prospectively and evaluate calibration, CLV and ROI after enough observations accumulate.
+Do not multiply marginals unless independence is justified.
+
+Use shared-state simulations. Store the binary result of every leg in every simulation, then calculate:
+
+- empirical joint probability
+- independent-product probability
+- difference between the two
+- pairwise phi correlations
+- correlation-risk score
+
+## 7. Production readiness
+
+Do not call the model production-ready merely because historical ROI is positive.
+
+Minimum evidence should include:
+
+- acceptable calibration
+- stable results over multiple time segments
+- no obvious look-ahead leakage
+- positive or at least non-negative CLV on recommended bets
+- sensible edge monotonicity
+- separate evidence for parlays versus singles
+- prospective shadow-mode tracking

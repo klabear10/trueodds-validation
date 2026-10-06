@@ -1,23 +1,40 @@
-# TrueOdds Validation
+# TrueOdds 2.1
 
-TrueOdds is an experimental sports-betting probability and validation framework.
+Executable validation framework for a sports-betting probability model.
 
-## Current stage
+## What this version does
 
-TrueOdds 2.1 development / validation.
+- converts American odds to implied break-even probabilities
+- computes raw and conservative EV
+- calibrates model probabilities from historical outcomes
+- measures Brier score, log loss, calibration error, ROI, and CLV
+- estimates joint parlay probability from shared simulation outcomes
+- measures pairwise dependence between parlay legs
+- applies an uncertainty haircut
+- distinguishes BET, PROMO-ONLY BET, LEAN, and PASS
+- supports out-of-sample validation without requiring market odds as model inputs
 
-Immediate priorities:
+## Important limitation
 
-- calibrated probabilities rather than raw confidence
-- explicit parlay joint-probability modeling
-- correlation-aware same-game parlay evaluation
-- conservative uncertainty adjustments
-- sportsbook break-even and EV calculations
-- promotion-aware classification
-- historical and out-of-sample validation
+This package is the validation/safety engine. It does **not** magically create a proven football forecasting edge by itself. A football model still needs historical pregame features and outcomes. The included logistic probability model is a trainable baseline that can consume those features once supplied.
 
-## Decision pipeline
+## Layout
 
-raw probability -> calibrated probability -> uncertainty adjustment -> conservative probability -> dependency/correlation analysis -> joint probability -> sportsbook break-even probability -> raw EV -> conservative EV -> promo-adjusted EV -> BET / PROMO-ONLY BET / PASS
+- `src/trueodds/pricing.py` — odds and EV math
+- `src/trueodds/calibration.py` — calibration and proper scoring rules
+- `src/trueodds/uncertainty.py` — conservative probability logic
+- `src/trueodds/parlay.py` — joint probability / dependence analysis
+- `src/trueodds/validation.py` — backtest metrics, ROI, CLV, edge buckets
+- `src/trueodds/model.py` — simple trainable logistic probability model
+- `src/trueodds/schema.py` — validation record schema
+- `tests/` — executable tests
+- `docs/VALIDATION_PLAN.md` — protocol for leakage-free testing
 
-A positive modeled EV is not proof of a real-world edge until it survives calibration and out-of-sample testing.
+## Quick start
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+```
+
+A positive modeled EV is not proof of a real-world edge until it survives out-of-sample calibration and live/shadow tracking.
